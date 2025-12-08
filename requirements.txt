@@ -25,5 +25,5 @@ seaborn>=0.12.0
 # 유틸리티
 tqdm>=4.65.0
 
-# Gradio
-gradio>=6.0.0
+# Streamlit (Gradio 제거)
+streamlit>=1.28.0

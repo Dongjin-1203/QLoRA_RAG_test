@@ -1,107 +1,61 @@
 """
-HuggingFace Space용 실험 앱
+HuggingFace Space용 실험 앱 (Streamlit)
 
-Gradio를 사용하여 웹 UI에서 실험을 실행하고 결과를 확인합니다.
+Streamlit을 사용하여 웹 UI에서 실험을 실행하고 결과를 확인합니다.
 """
 
-import gradio as gr
+import streamlit as st
 import os
 import json
 import pandas as pd
 from pathlib import Path
-import matplotlib.pyplot as plt
 from datetime import datetime
+import sys
 
 # 프로젝트 경로 설정
-import sys
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.eval_dataset import EvalDataset
-from src.compare_models import ModelComparison
-from src.analyze_results import ResultAnalyzer
+st.set_page_config(
+    page_title="RFPilot 모델 비교 실험",
+    page_icon="🔬",
+    layout="wide"
+)
 
 
 class ExperimentApp:
     """실험 앱 클래스"""
     
-    def __init__(self):
-        self.experiment = None
-        self.latest_result_file = None
-    
-    def setup_environment(self, api_key: str) -> str:
+    @staticmethod
+    def setup_environment(api_key: str) -> bool:
         """환경 설정"""
         if not api_key:
-            return "❌ OpenAI API 키를 입력해주세요."
+            return False
         
         os.environ['OPENAI_API_KEY'] = api_key
         os.environ['USE_MODEL_HUB'] = 'true'
         os.environ['GGUF_N_GPU_LAYERS'] = '35'
         
-        return "✅ 환경 설정 완료!"
+        return True
     
-    def run_experiment(
-        self, 
-        api_key: str, 
-        distribution: str,
-        progress=gr.Progress()
-    ) -> tuple:
-        """실험 실행"""
-        try:
-            # 환경 설정
-            setup_msg = self.setup_environment(api_key)
-            if "❌" in setup_msg:
-                return setup_msg, None, None
-            
-            progress(0.1, desc="환경 설정 완료...")
-            
-            # Config 로드
-            from src.utils.config import RAGConfig
-            config = RAGConfig()
-            
-            progress(0.2, desc="실험 초기화 중...")
-            
-            # 실험 초기화
-            self.experiment = ModelComparison(
-                config=config, 
-                output_dir="./experiments/results"
-            )
-            
-            progress(0.3, desc="모델 로딩 중... (3-5분 소요)")
-            
-            # 모델 로드
-            self.experiment.load_models()
-            
-            progress(0.5, desc="실험 실행 중... (10-20분 소요)")
-            
-            # 실험 실행
-            results = self.experiment.run_experiment(
-                distribution=distribution.lower(),
-                save_results=True
-            )
-            
-            progress(0.9, desc="결과 분석 중...")
-            
-            # 최신 결과 파일 찾기
-            result_files = sorted(
-                Path("./experiments/results").glob("results_*.json"),
-                reverse=True
-            )
-            self.latest_result_file = str(result_files[0]) if result_files else None
-            
-            # 요약 생성
-            summary = self._generate_summary(results)
-            
-            # CSV 생성
-            df = self._results_to_dataframe(results)
-            
-            progress(1.0, desc="완료!")
-            
-            return "✅ 실험 완료!", summary, df
+    @staticmethod
+    @st.cache_resource(show_spinner="모델 로딩 중... (5-10분 소요)")
+    def load_models():
+        """모델 로드 (캐싱)"""
+        from src.utils.config import RAGConfig
+        from src.compare_models import ModelComparison
         
-        except Exception as e:
-            return f"❌ 실험 실패: {str(e)}", None, None
+        config = RAGConfig()
+        experiment = ModelComparison(
+            config=config,
+            output_dir="./experiments/results"
+        )
+        
+        experiment.load_models()
+        
+        return experiment
     
-    def _generate_summary(self, results: dict) -> str:
+    @staticmethod
+    def generate_summary(results: dict) -> str:
         """요약 생성"""
         summary = "=" * 60 + "\n"
         summary += "실험 결과 요약\n"
@@ -113,31 +67,10 @@ class ExperimentApp:
         summary += f"모델: {', '.join(metadata['models'])}\n"
         summary += f"총 질문 수: {metadata['total_queries']}\n\n"
         
-        # 각 분포별 요약
-        for dist_type, dist_results in results['results'].items():
-            summary += f"\n{'='*60}\n"
-            summary += f"{dist_type.upper()}\n"
-            summary += f"{'='*60}\n\n"
-            
-            # 모델별 통계
-            model_stats = {}
-            for result in dist_results:
-                model = result['model']
-                if model not in model_stats:
-                    model_stats[model] = []
-                model_stats[model].append(result)
-            
-            for model, model_results in model_stats.items():
-                success_count = sum(1 for r in model_results if r['success'])
-                avg_time = sum(r['elapsed_time'] for r in model_results if r['success']) / max(success_count, 1)
-                
-                summary += f"[{model}]\n"
-                summary += f"  성공: {success_count}/{len(model_results)}\n"
-                summary += f"  평균 시간: {avg_time:.3f}초\n\n"
-        
         return summary
     
-    def _results_to_dataframe(self, results: dict) -> pd.DataFrame:
+    @staticmethod
+    def results_to_dataframe(results: dict) -> pd.DataFrame:
         """결과를 DataFrame으로 변환"""
         all_rows = []
         
@@ -154,131 +87,167 @@ class ExperimentApp:
                 all_rows.append(row)
         
         return pd.DataFrame(all_rows)
-    
-    def analyze_results(self) -> tuple:
-        """결과 분석"""
-        if not self.latest_result_file:
-            return "❌ 먼저 실험을 실행해주세요.", None, None, None, None
-        
-        try:
-            analyzer = ResultAnalyzer(self.latest_result_file)
-            
-            # 그래프 생성
-            analyzer.plot_time_comparison()
-            analyzer.plot_token_comparison()
-            analyzer.plot_rag_usage()
-            analyzer.plot_overfitting_analysis()
-            
-            # 그래프 파일 경로
-            analysis_dir = Path(self.latest_result_file).parent / "analysis"
-            
-            time_plot = str(analysis_dir / "time_comparison.png")
-            token_plot = str(analysis_dir / "token_comparison.png")
-            rag_plot = str(analysis_dir / "rag_usage.png")
-            overfitting_plot = str(analysis_dir / "overfitting_analysis.png")
-            
-            return (
-                "✅ 분석 완료!",
-                time_plot if Path(time_plot).exists() else None,
-                token_plot if Path(token_plot).exists() else None,
-                rag_plot if Path(rag_plot).exists() else None,
-                overfitting_plot if Path(overfitting_plot).exists() else None
-            )
-        
-        except Exception as e:
-            return f"❌ 분석 실패: {str(e)}", None, None, None, None
 
 
-# Gradio 인터페이스 생성
-def create_interface():
-    """Gradio 인터페이스 생성"""
-    app = ExperimentApp()
+def main():
+    """메인 앱"""
     
-    with gr.Blocks(title="RFPilot 모델 비교 실험") as demo:
-        gr.Markdown("""
-        # 🔬 RFPilot 모델 비교 실험
+    # 헤더
+    st.title("🔬 RFPilot 모델 비교 실험")
+    st.markdown("""
+    3가지 모델(QLoRA+RAG, QLoRA 단독, Base+RAG)의 성능을 비교합니다.
+    
+    ⚠️ **첫 실행 시 모델 다운로드로 5-10분 소요됩니다.**
+    """)
+    
+    # 탭 생성
+    tab1, tab2, tab3 = st.tabs(["🚀 실험 실행", "📊 결과 분석", "ℹ️ 정보"])
+    
+    # ===== 탭 1: 실험 실행 =====
+    with tab1:
+        st.header("실험 실행")
         
-        3가지 모델(QLoRA+RAG, QLoRA 단독, Base+RAG)의 성능을 비교합니다.
+        # API 키 입력
+        api_key = st.text_input(
+            "OpenAI API Key",
+            type="password",
+            placeholder="sk-..."
+        )
         
-        ⚠️ **주의**: 실험 실행 시간이 오래 걸립니다 (10-20분).
+        # 분포 선택
+        distribution = st.radio(
+            "분포 선택",
+            ["All", "In", "Out"],
+            horizontal=True
+        )
+        
+        # 실험 시작 버튼
+        if st.button("실험 시작", type="primary"):
+            if not api_key:
+                st.error("❌ OpenAI API 키를 입력해주세요.")
+            else:
+                try:
+                    # 환경 설정
+                    ExperimentApp.setup_environment(api_key)
+                    st.success("✅ 환경 설정 완료!")
+                    
+                    # 모델 로드
+                    with st.spinner("모델 로딩 중... (첫 실행 시 5-10분 소요)"):
+                        experiment = ExperimentApp.load_models()
+                    st.success("✅ 모델 로드 완료!")
+                    
+                    # 실험 실행
+                    with st.spinner("실험 실행 중... (10-20분 소요)"):
+                        results = experiment.run_experiment(
+                            distribution=distribution.lower(),
+                            save_results=True
+                        )
+                    
+                    st.success("✅ 실험 완료!")
+                    
+                    # 결과 표시
+                    st.subheader("실험 결과")
+                    
+                    # 요약
+                    summary = ExperimentApp.generate_summary(results)
+                    st.text(summary)
+                    
+                    # DataFrame
+                    df = ExperimentApp.results_to_dataframe(results)
+                    st.dataframe(df, use_container_width=True)
+                    
+                    # 세션에 결과 저장
+                    st.session_state['latest_results'] = results
+                    st.session_state['result_file'] = experiment.output_dir / f"results_{experiment.timestamp}.json"
+                    
+                except Exception as e:
+                    st.error(f"❌ 실험 실패: {str(e)}")
+                    import traceback
+                    st.code(traceback.format_exc())
+    
+    # ===== 탭 2: 결과 분석 =====
+    with tab2:
+        st.header("결과 분석")
+        
+        if st.button("분석 시작", type="primary"):
+            if 'result_file' not in st.session_state:
+                st.error("❌ 먼저 실험을 실행해주세요.")
+            else:
+                try:
+                    from src.analyze_results import ResultAnalyzer
+                    
+                    with st.spinner("결과 분석 중..."):
+                        analyzer = ResultAnalyzer(str(st.session_state['result_file']))
+                        
+                        # 그래프 생성
+                        analyzer.plot_time_comparison()
+                        analyzer.plot_token_comparison()
+                        analyzer.plot_rag_usage()
+                        analyzer.plot_overfitting_analysis()
+                    
+                    st.success("✅ 분석 완료!")
+                    
+                    # 그래프 표시
+                    analysis_dir = st.session_state['result_file'].parent / "analysis"
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        time_plot = analysis_dir / "time_comparison.png"
+                        if time_plot.exists():
+                            st.image(str(time_plot), caption="응답 시간 비교")
+                        
+                        rag_plot = analysis_dir / "rag_usage.png"
+                        if rag_plot.exists():
+                            st.image(str(rag_plot), caption="RAG 사용 패턴")
+                    
+                    with col2:
+                        token_plot = analysis_dir / "token_comparison.png"
+                        if token_plot.exists():
+                            st.image(str(token_plot), caption="토큰 사용량 비교")
+                        
+                        overfitting_plot = analysis_dir / "overfitting_analysis.png"
+                        if overfitting_plot.exists():
+                            st.image(str(overfitting_plot), caption="과적합 분석")
+                    
+                except Exception as e:
+                    st.error(f"❌ 분석 실패: {str(e)}")
+                    import traceback
+                    st.code(traceback.format_exc())
+    
+    # ===== 탭 3: 정보 =====
+    with tab3:
+        st.header("프로젝트 정보")
+        
+        st.markdown("""
+        ## 📋 비교 모델
+        
+        | 모델 | 설명 |
+        |------|------|
+        | QLoRA + RAG | 기존 서비스 (QLoRA fine-tuning + RAG) |
+        | QLoRA 단독 | RAG 제거 (QLoRA만) |
+        | Base + RAG | PEFT 제거 (Base 모델 + RAG) |
+        
+        ## 📊 측정 지표
+        
+        - **과적합**: In-Distribution vs Out-Distribution 성능 차이
+        - **답변 속도**: 평균 응답 시간
+        - **토큰 사용량**: 평균 토큰 소비
+        - **RAG 사용 패턴**: RAG 활용도
+        
+        ## ⏱️ 예상 소요 시간
+        
+        - 모델 로딩: 5-10분 (첫 실행 시)
+        - 실험 실행: 10-20분 (5개 질문 x 3개 모델)
+        - 결과 분석: 1-2분
+        
+        ## 💡 사용 팁
+        
+        - 모델은 한 번 로드되면 캐시됩니다
+        - 페이지 새로고침 시 모델 재로드 필요
+        - API 키는 세션에만 저장되며 서버에 저장되지 않습니다
         """)
-        
-        with gr.Tab("🚀 실험 실행"):
-            api_key_input = gr.Textbox(
-                label="OpenAI API Key",
-                type="password",
-                placeholder="sk-..."
-            )
-            
-            distribution_input = gr.Radio(
-                choices=["All", "In", "Out"],
-                value="All",
-                label="분포 선택"
-            )
-            
-            run_btn = gr.Button("실험 시작", variant="primary")
-            
-            status_output = gr.Textbox(label="상태", lines=2)
-            summary_output = gr.Textbox(label="요약", lines=20)
-            results_output = gr.Dataframe(label="결과")
-            
-            run_btn.click(
-                fn=app.run_experiment,
-                inputs=[api_key_input, distribution_input],
-                outputs=[status_output, summary_output, results_output]
-            )
-        
-        with gr.Tab("📊 결과 분석"):
-            analyze_btn = gr.Button("분석 시작", variant="primary")
-            
-            analyze_status = gr.Textbox(label="상태")
-            
-            with gr.Row():
-                time_plot = gr.Image(label="응답 시간 비교")
-                token_plot = gr.Image(label="토큰 사용량 비교")
-            
-            with gr.Row():
-                rag_plot = gr.Image(label="RAG 사용 패턴")
-                overfitting_plot = gr.Image(label="과적합 분석")
-            
-            analyze_btn.click(
-                fn=app.analyze_results,
-                outputs=[
-                    analyze_status,
-                    time_plot,
-                    token_plot,
-                    rag_plot,
-                    overfitting_plot
-                ]
-            )
-        
-        with gr.Tab("ℹ️ 정보"):
-            gr.Markdown("""
-            ## 📋 비교 모델
-            
-            | 모델 | 설명 |
-            |------|------|
-            | QLoRA + RAG | 기존 서비스 (QLoRA fine-tuning + RAG) |
-            | QLoRA 단독 | RAG 제거 (QLoRA만) |
-            | Base + RAG | PEFT 제거 (Base 모델 + RAG) |
-            
-            ## 📊 측정 지표
-            
-            - **과적합**: In-Distribution vs Out-Distribution 성능 차이
-            - **답변 속도**: 평균 응답 시간
-            - **토큰 사용량**: 평균 토큰 소비
-            - **RAG 사용 패턴**: RAG 활용도
-            
-            ## ⏱️ 예상 소요 시간
-            
-            - 모델 로딩: 3-5분
-            - 실험 실행: 10-20분 (25개 질문)
-            - 결과 분석: 1-2분
-            """)
-    
-    return demo
 
 
 if __name__ == "__main__":
-    demo = create_interface()
-    demo.launch(share=True)
+    main()
