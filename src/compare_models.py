@@ -58,33 +58,30 @@ class ModelComparison:
         logger.info(f"   결과 저장 경로: {self.output_dir}")
     
     def load_models(self):
-        """3가지 모델 로드"""
+        """2가지 모델 로드 (Base는 추후 GGUF 변환 후 추가 예정)"""
         logger.info("\n" + "="*60)
-        logger.info("모델 로딩 시작")
+        logger.info("모델 로딩 시작 (2개 모델)")
         logger.info("="*60)
         
         try:
             # 1. QLoRA + RAG (기존)
-            logger.info("\n[1/3] QLoRA + RAG 모델 로딩...")
+            logger.info("\n[1/2] QLoRA + RAG 모델 로딩...")
             from src.generator.generator_gguf import GGUFRAGPipeline
             self.pipelines['qlora_rag'] = GGUFRAGPipeline(config=self.config)
             logger.info("✅ QLoRA + RAG 로드 완료")
             
             # 2. QLoRA 단독 (RAG 제거)
-            logger.info("\n[2/3] QLoRA 단독 모델 로딩...")
+            logger.info("\n[2/2] QLoRA 단독 모델 로딩...")
             from src.generator.generator_gguf_no_rag import GGUFNoRAGPipeline
             self.pipelines['qlora_only'] = GGUFNoRAGPipeline(config=self.config)
             logger.info("✅ QLoRA 단독 로드 완료")
             
-            # 3. Base + RAG (PEFT 제거)
-            logger.info("\n[3/3] Base + RAG 모델 로딩...")
-            from src.generator.generator_gguf_base import GGUFBaseRAGPipeline
-            self.pipelines['base_rag'] = GGUFBaseRAGPipeline(config=self.config)
-            logger.info("✅ Base + RAG 로드 완료")
-            
-            logger.info("\n" + "="*60)
-            logger.info(f"✅ 총 {len(self.pipelines)}개 모델 로드 완료")
-            logger.info("="*60 + "\n")
+            # 3. Base + RAG (PEFT 제거) - TODO: GGUF 변환 후 추가
+            # logger.info("\n[3/3] Base + RAG 모델 로딩...")
+            # from src.generator.generator_gguf_base import GGUFBaseRAGPipeline
+            # self.pipelines['base_rag'] = GGUFBaseRAGPipeline(config=self.config)
+            # logger.info("✅ Base + RAG 로드 완료")
+            logger.warning("\n⚠️ Base + RAG 스킵: Base 모델 GGUF 변환 후 추가 예정")
             
         except Exception as e:
             logger.error(f"❌ 모델 로드 실패: {e}")
