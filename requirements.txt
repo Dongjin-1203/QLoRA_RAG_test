@@ -2,13 +2,18 @@
 python-dotenv>=1.0.0
 openai>=1.0.0
 
+# LangChain
+langchain>=0.1.0
+langchain-core>=0.1.0
+langchain-chroma>=0.1.0
+langchain-openai>=0.1.0
+langsmith>=0.1.0
+
 # LLM & RAG
-llama-cpp-python>=0.2.90
-chromadb>=0.4.0
-sentence-transformers>=2.2.0
+chromadb>=0.5.0
+sentence-transformers>=2.2.0,<3.0.0
 rank-bm25>=0.2.2
 huggingface-hub>=0.19.0
-langchain_chroma>=0.0.7
 
 # 문서 처리
 pypdf>=3.17.0
@@ -16,15 +21,15 @@ python-docx>=1.1.0
 olefile>=0.47
 
 # 데이터 처리
-pandas>=2.0.0
-numpy>=1.24.0
+pandas>=2.0.0,<3.0.0
+numpy>=1.24.0,<2.0.0
 
 # 시각화
-matplotlib>=3.7.0
-seaborn>=0.12.0
+matplotlib>=3.7.0,<4.0.0
+seaborn>=0.12.0,<1.0.0
 
 # 유틸리티
 tqdm>=4.65.0
 
-# Streamlit (Gradio 제거)
-streamlit>=1.28.0
+# Streamlit
+streamlit>=1.28.0,<2.0.0
