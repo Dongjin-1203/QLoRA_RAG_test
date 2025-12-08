@@ -26,7 +26,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.utils.config import RAGConfig
-from eval_dataset import EvalDataset
+from src.eval_dataset import EvalDataset
 
 # 로깅 설정
 logging.basicConfig(
