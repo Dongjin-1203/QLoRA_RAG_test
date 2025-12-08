@@ -1,0 +1,29 @@
+# Core
+python-dotenv>=1.0.0
+openai>=1.0.0
+
+# LLM & RAG
+llama-cpp-python>=0.2.90
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+rank-bm25>=0.2.2
+huggingface-hub>=0.19.0
+
+# 문서 처리
+pypdf>=3.17.0
+python-docx>=1.1.0
+olefile>=0.47
+
+# 데이터 처리
+pandas>=2.0.0
+numpy>=1.24.0
+
+# 시각화
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# 유틸리티
+tqdm>=4.65.0
+
+# Gradio
+gradio>=6.0.0
