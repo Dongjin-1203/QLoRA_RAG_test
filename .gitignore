@@ -207,7 +207,6 @@ marimo/_lsp/
 __marimo__/
 
 # 모델 & DB
-chroma_db/
 models/
 *.gguf
 .cache/
