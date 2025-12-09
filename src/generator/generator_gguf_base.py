@@ -72,12 +72,12 @@ class GGUFGenerator:
                 base_model_repo = getattr(
                     self.config, 
                     'BASE_MODEL_HUB_REPO', 
-                    'beomi/Llama-3-Open-Ko-8B-gguf'
+                    'Dongjin1203/Llama-3-Open-Ko-8B-GGUF'
                 )
                 base_model_filename = getattr(
                     self.config, 
                     'BASE_MODEL_HUB_FILENAME', 
-                    'ggml-model-Q4_K_M.gguf'
+                    'Llama-3-Open-Ko-8B-Q4_K_M.gguf'
                 )
                 model_cache_dir = getattr(self.config, 'MODEL_CACHE_DIR', '.cache/models')
                 
