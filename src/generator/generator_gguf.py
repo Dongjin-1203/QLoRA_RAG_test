@@ -84,8 +84,8 @@ class GGUFGenerator:
             # Model Hub 사용 여부에 따라 경로 결정
             if use_model_hub:
                 # === Model Hub에서 다운로드 ===
-                model_hub_repo = getattr(self.config, 'MODEL_HUB_REPO', 'beomi/Llama-3-Open-Ko-8B-gguf')
-                model_hub_filename = getattr(self.config, 'MODEL_HUB_FILENAME', 'ggml-model-Q4_K_M.gguf')
+                model_hub_repo = getattr(self.config, 'MODEL_HUB_REPO', 'Dongjin1203/RFP_Documents_chatbot')
+                model_hub_filename = getattr(self.config, 'MODEL_HUB_FILENAME', 'Llama-3-Open-Ko-8B.Q4_K_M.gguf')
                 model_cache_dir = getattr(self.config, 'MODEL_CACHE_DIR', '.cache/models')
                 
                 logger.info(f"📥 Model Hub에서 다운로드: {model_hub_repo}")

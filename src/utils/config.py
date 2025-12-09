@@ -71,11 +71,11 @@ class Config:
         # 2. Base 모델 (PEFT 없음) - 비교 실험용
         self.BASE_MODEL_HUB_REPO = os.getenv(
             "BASE_MODEL_HUB_REPO",
-            "Llama-3-Open-Ko-8B-Q4_K_M.gguf"
+            "Dongjin1203/Llama-3-Open-Ko-8B-GGUF"
         )
         self.BASE_MODEL_HUB_FILENAME = os.getenv(
             "BASE_MODEL_HUB_FILENAME",
-            "ggml-model-Q4_K_M.gguf"
+            "Llama-3-Open-Ko-8B-Q4_K_M.gguf"
         )
         
         # 공통 캐시 디렉토리
