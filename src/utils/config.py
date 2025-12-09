@@ -87,7 +87,7 @@ class Config:
         
         # GGUF GPU 설정 (T4 Medium 최적화 - 8B 모델용)
         self.GGUF_N_GPU_LAYERS = int(os.getenv("GGUF_N_GPU_LAYERS", "35"))  # T4에서 8B 모델 전체를 GPU에 로드
-        self.GGUF_N_CTX = int(os.getenv("GGUF_N_CTX", "4096"))              # 컨텍스트 길이
+        self.GGUF_N_CTX = int(os.getenv("GGUF_N_CTX", "3072"))              # 컨텍스트 길이
         self.GGUF_N_THREADS = int(os.getenv("GGUF_N_THREADS", "4"))         # CPU 스레드 (GPU 사용 시 낮게)
         self.GGUF_MAX_NEW_TOKENS = int(os.getenv("GGUF_MAX_NEW_TOKENS", "512"))  # 최대 생성 토큰
         self.GGUF_TEMPERATURE = float(os.getenv("GGUF_TEMPERATURE", "0.7"))       # 생성 다양성
