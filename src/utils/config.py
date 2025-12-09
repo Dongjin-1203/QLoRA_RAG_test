@@ -71,7 +71,7 @@ class Config:
         # 2. Base 모델 (PEFT 없음) - 비교 실험용
         self.BASE_MODEL_HUB_REPO = os.getenv(
             "BASE_MODEL_HUB_REPO",
-            "beomi/Llama-3-Open-Ko-8B-gguf"
+            "Llama-3-Open-Ko-8B-Q4_K_M.gguf"
         )
         self.BASE_MODEL_HUB_FILENAME = os.getenv(
             "BASE_MODEL_HUB_FILENAME",

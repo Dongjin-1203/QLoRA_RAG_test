@@ -77,10 +77,10 @@ class ModelComparison:
             logger.info("✅ QLoRA 단독 로드 완료")
             
             # 3. Base + RAG (PEFT 제거) - TODO: GGUF 변환 후 추가
-            # logger.info("\n[3/3] Base + RAG 모델 로딩...")
-            # from src.generator.generator_gguf_base import GGUFBaseRAGPipeline
-            # self.pipelines['base_rag'] = GGUFBaseRAGPipeline(config=self.config)
-            # logger.info("✅ Base + RAG 로드 완료")
+            logger.info("\n[3/3] Base + RAG 모델 로딩...")
+            from src.generator.generator_gguf_base import GGUFBaseRAGPipeline
+            self.pipelines['base_rag'] = GGUFBaseRAGPipeline(config=self.config)
+            logger.info("✅ Base + RAG 로드 완료")
             logger.warning("\n⚠️ Base + RAG 스킵: Base 모델 GGUF 변환 후 추가 예정")
             
         except Exception as e:
